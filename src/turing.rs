@@ -182,15 +182,8 @@ impl TuringMachine {
             None => false,
             Some(state) => {
                 self.num_steps += 1;
-                let mut instruction = None;
-                for inst in &self.instructions {
-                    if state == &inst.state && self.tape[self.pos] == inst.entry {
-                        instruction = Some(inst);
-                    }
-                }
-
-                match instruction {
-                    Some(instruction) => {
+                for instruction in &self.instructions {
+                    if state == &instruction.state && self.tape[self.pos] == instruction.entry {
                         self.state = instruction.new_state;
                         self.tape[self.pos] = instruction.new_entry;
 
@@ -208,13 +201,11 @@ impl TuringMachine {
                                 }
                             }
                         }
-                        true
-                    }
-                    None => {
-                        dbg!(self);
-                        panic!("No Instruction matched Touringmachine");
+                        return true;
                     }
                 }
+                dbg!(self);
+                panic!("No Instruction matched Touringmachine");
             }
         }
     }
