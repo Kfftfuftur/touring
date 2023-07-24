@@ -1,7 +1,17 @@
 use std::{collections::VecDeque, fmt::Display, fs::File, io::Read, path::Path, vec};
 
-type TapeEntry = String;
-static DEFAULT_ENTRY: &str = "0";
+type TapeEntry = u8;
+static DEFAULT_ENTRY: TapeEntry = 0;
+static mut STATES: Vec<String> = vec![];
+
+fn position<T: std::cmp::PartialEq>(vector: &mut Vec<T>, element: &T) -> Option<usize> {
+    for i in 0..vector.len() {
+        if &vector[i] == element {
+            return Some(i);
+        }
+    }
+    return None;
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Direction {
@@ -20,9 +30,9 @@ impl Display for Direction {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct Instruction {
-    state: String,
+    state: usize,
     entry: TapeEntry,
-    new_state: Option<String>,
+    new_state: Option<usize>,
     new_entry: TapeEntry,
     direction: Direction,
 }
@@ -31,10 +41,10 @@ impl Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.pad(&format!(
             "({}, {}) -> ({}, {}, {})",
-            self.state,
+            unsafe { &STATES[self.state] },
             self.entry,
-            match &self.new_state {
-                Some(state) => state,
+            match self.new_state {
+                Some(state) => unsafe { &STATES[state] },
                 None => "Halt",
             },
             self.new_entry,
@@ -68,9 +78,44 @@ impl TryFrom<&str> for Instruction {
         }
 
         let source_state = line[0].to_string();
-        let source_entry = line[1].to_string();
+        let source_state = match position(unsafe { &mut STATES }, &source_state) {
+            Some(source_state) => source_state,
+            None => unsafe {
+                STATES.push(source_state);
+                STATES.len() - 1
+            },
+        };
+
         let target_state = line[3].to_string();
-        let target_entry = line[4].to_string();
+        let target_state = if target_state == "Halt" {
+            None
+        } else {
+            match position(unsafe { &mut STATES }, &target_state) {
+                Some(target_state) => Some(target_state),
+                None => unsafe {
+                    STATES.push(target_state);
+                    Some(STATES.len() - 1)
+                },
+            }
+        };
+
+        let source_entry = match line[1].to_string().parse() {
+            Ok(source_entry) => source_entry,
+            Err(why) => {
+                return Err(InstructionParseError::ParseError {
+                    why: format!("unable to parse source entry: {why}"),
+                })
+            }
+        };
+
+        let target_entry = match line[4].to_string().parse() {
+            Ok(target_entry) => target_entry,
+            Err(why) => {
+                return Err(InstructionParseError::ParseError {
+                    why: format!("unable to parse target entry: {why}"),
+                })
+            }
+        };
 
         let direction = if line[5] == "L" {
             Direction::Left
@@ -78,12 +123,6 @@ impl TryFrom<&str> for Instruction {
             Direction::Right
         } else {
             panic!("couldn't parse direction '{}'", line[5])
-        };
-
-        let target_state = if target_state == "Halt" {
-            None
-        } else {
-            Some(target_state)
         };
 
         Ok(Instruction {
@@ -98,13 +137,13 @@ impl TryFrom<&str> for Instruction {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TuringMachine {
-    state: Option<String>,
+    state: Option<usize>,
     instructions: Vec<Instruction>,
     tape: VecDeque<TapeEntry>,
     pos: usize,
     offset: usize,
 
-    num_steps: u128,
+    pub num_steps: u128,
 }
 
 impl TuringMachine {
@@ -131,9 +170,9 @@ impl TuringMachine {
                 }
 
                 return TuringMachine {
-                    state: Some("A".to_string()),
+                    state: Some(0),
                     instructions,
-                    tape: vec![DEFAULT_ENTRY.to_string()].into(),
+                    tape: vec![DEFAULT_ENTRY].into(),
                     pos: 0,
                     offset: 0,
                     num_steps: 0,
@@ -185,13 +224,13 @@ impl TuringMachine {
     }
 
     fn extend_left(&mut self) {
-        self.tape.push_front(DEFAULT_ENTRY.to_string());
+        self.tape.push_front(DEFAULT_ENTRY);
         self.pos += 1;
         self.offset += 1;
     }
 
     fn extend_right(&mut self) {
-        self.tape.push_back(DEFAULT_ENTRY.to_string());
+        self.tape.push_back(DEFAULT_ENTRY);
     }
 
     pub fn print_tape(&self, include_pos_marker: bool) {
@@ -212,8 +251,8 @@ impl TuringMachine {
             None => {}
         }
 
-        let state = match &self.state {
-            Some(state) => state,
+        let state = match self.state {
+            Some(state) => unsafe { &STATES[state] },
             None => "Halt",
         };
 
@@ -255,7 +294,7 @@ impl TuringMachine {
     pub fn eval_busy_bever(&self) {
         let mut ones: i128 = 0;
         for entry in &self.tape {
-            if entry == "1" {
+            if *entry == 1 {
                 ones += 1;
             }
         }
