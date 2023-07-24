@@ -5,12 +5,7 @@ static DEFAULT_ENTRY: TapeEntry = 0;
 static mut STATES: Vec<String> = vec![];
 
 fn position<T: std::cmp::PartialEq>(vector: &mut Vec<T>, element: &T) -> Option<usize> {
-    for i in 0..vector.len() {
-        if &vector[i] == element {
-            return Some(i);
-        }
-    }
-    return None;
+    (0..vector.len()).find(|&i| &vector[i] == element)
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -62,7 +57,7 @@ impl TryFrom<&str> for Instruction {
     type Error = InstructionParseError;
 
     fn try_from(line: &str) -> Result<Self, Self::Error> {
-        if line.len() == 0 {
+        if line.is_empty() {
             return Err(InstructionParseError::EmptyLine);
         }
 
@@ -146,6 +141,7 @@ pub struct TuringMachine {
     pub num_steps: u128,
 }
 
+#[allow(dead_code)]
 impl TuringMachine {
     pub fn new(path: &Path) -> Self {
         let mut instructions = vec![];
@@ -169,14 +165,14 @@ impl TuringMachine {
                     }
                 }
 
-                return TuringMachine {
+                TuringMachine {
                     state: Some(0),
                     instructions,
                     tape: vec![DEFAULT_ENTRY].into(),
                     pos: 0,
                     offset: 0,
                     num_steps: 0,
-                };
+                }
             }
         }
     }
@@ -195,8 +191,8 @@ impl TuringMachine {
 
                 match instruction {
                     Some(instruction) => {
-                        self.state = instruction.new_state.clone();
-                        self.tape[self.pos] = instruction.new_entry.clone();
+                        self.state = instruction.new_state;
+                        self.tape[self.pos] = instruction.new_entry;
 
                         match instruction.direction {
                             Direction::Left => {
@@ -288,7 +284,7 @@ impl TuringMachine {
         for instruction in &self.instructions {
             println!("{instruction}");
         }
-        println!("");
+        println!();
     }
 
     pub fn eval_busy_bever(&self) {
