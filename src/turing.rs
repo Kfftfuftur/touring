@@ -204,6 +204,9 @@ impl TuringMachine {
                         return true;
                     }
                 }
+                unsafe {
+                    dbg!(&STATES);
+                }
                 dbg!(self);
                 panic!("No Instruction matched Touringmachine");
             }
@@ -278,13 +281,99 @@ impl TuringMachine {
         println!();
     }
 
-    pub fn eval_busy_bever(&self) {
-        let mut ones: i128 = 0;
+    pub fn eval_busy_bever(&self) -> (u128, u128, u128) {
+        let mut ones: u128 = 0;
+        let mut zeros: u128 = 0;
+
         for entry in &self.tape {
             if *entry == 1 {
                 ones += 1;
+            } else if *entry == 0 {
+                zeros += 1;
             }
         }
-        println!("Busy Bever: {} ones after {} steps", ones, self.num_steps);
+        println!(
+            "Busy Bever: {} ones, {} zeros, after {} steps",
+            ones, zeros, self.num_steps
+        );
+
+        (ones, zeros, self.num_steps)
     }
+}
+
+#[test]
+fn test_busy_bever_1() {
+    let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_1.turing"));
+    let mut num_steps = 0;
+    while tm.step() {
+        num_steps += 1;
+    }
+
+    let (ones, zeros, _steps) = tm.eval_busy_bever();
+
+    assert_eq!(ones, 1);
+    assert_eq!(zeros, 1);
+    assert_eq!(num_steps, 1);
+}
+
+#[test]
+fn test_busy_bever_2() {
+    let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_2.turing"));
+    let mut num_steps = 0;
+    while tm.step() {
+        num_steps += 1;
+    }
+
+    let (ones, zeros, _steps) = tm.eval_busy_bever();
+
+    assert_eq!(ones, 4);
+    assert_eq!(zeros, 0);
+    assert_eq!(num_steps, 6);
+}
+
+#[test]
+fn test_busy_bever_3() {
+    let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_3.turing"));
+    let mut num_steps = 0;
+    while tm.step() {
+        num_steps += 1;
+    }
+
+    let (ones, zeros, _steps) = tm.eval_busy_bever();
+
+    assert_eq!(ones, 6);
+    assert_eq!(zeros, 0);
+    assert_eq!(num_steps, 14);
+}
+
+#[test]
+fn test_busy_bever_4() {
+    let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_4.turing"));
+    let mut num_steps = 0;
+    while tm.step() {
+        num_steps += 1;
+    }
+
+    let (ones, zeros, _steps) = tm.eval_busy_bever();
+
+    assert_eq!(ones, 13);
+    assert_eq!(zeros, 1);
+    assert_eq!(num_steps, 107);
+}
+
+#[test]
+fn test_busy_bever_5() {
+    let mut tm = TuringMachine::new(Path::new(
+        "examples/busy_bever/busy_bever_5_best_currently_known.turing",
+    ));
+    let mut num_steps = 0;
+    while tm.step() {
+        num_steps += 1;
+    }
+
+    let (ones, zeros, _steps) = tm.eval_busy_bever();
+
+    assert_eq!(ones, 4098);
+    assert_eq!(zeros, 8191);
+    assert_eq!(num_steps, 47176870);
 }
