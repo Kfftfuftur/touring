@@ -281,6 +281,16 @@ impl TuringMachine {
         println!();
     }
 
+    pub fn print_states(&self) {
+        println!("States: ");
+        println!(" Number | Name ");
+        println!("--------+------");
+        for i in 0..unsafe { STATES.len() } {
+            println!(" {:6} | '{}' ", i, unsafe { &STATES[i] })
+        }
+        println!();
+    }
+
     pub fn eval_busy_bever(&self) -> (u128, u128, u128) {
         let mut ones: u128 = 0;
         let mut zeros: u128 = 0;
@@ -304,6 +314,10 @@ impl TuringMachine {
 #[test]
 fn test_busy_bever_1() {
     let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_1.turing"));
+    
+    tm.print_states();
+    tm.print_instructions();
+
     let mut num_steps = 0;
     while tm.step() {
         num_steps += 1;
@@ -319,6 +333,10 @@ fn test_busy_bever_1() {
 #[test]
 fn test_busy_bever_2() {
     let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_2.turing"));
+    
+    tm.print_states();
+    tm.print_instructions();
+
     let mut num_steps = 0;
     while tm.step() {
         num_steps += 1;
@@ -334,6 +352,10 @@ fn test_busy_bever_2() {
 #[test]
 fn test_busy_bever_3() {
     let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_3.turing"));
+    
+    tm.print_states();
+    tm.print_instructions();
+
     let mut num_steps = 0;
     while tm.step() {
         num_steps += 1;
@@ -349,6 +371,10 @@ fn test_busy_bever_3() {
 #[test]
 fn test_busy_bever_4() {
     let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_4.turing"));
+    
+    tm.print_states();
+    tm.print_instructions();
+
     let mut num_steps = 0;
     while tm.step() {
         num_steps += 1;
@@ -366,6 +392,10 @@ fn test_busy_bever_5() {
     let mut tm = TuringMachine::new(Path::new(
         "examples/busy_bever/busy_bever_5_best_currently_known.turing",
     ));
+    
+    tm.print_states();
+    tm.print_instructions();
+
     let mut num_steps = 0;
     while tm.step() {
         num_steps += 1;
