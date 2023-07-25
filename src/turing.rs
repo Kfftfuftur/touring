@@ -1,10 +1,10 @@
-use std::{collections::VecDeque, fmt::Display, fs::File, io::Read, path::Path, vec};
+use std::{collections::VecDeque, fmt::Display, fs::File, io::Read, path::Path, sync::RwLock, vec};
 
 type TapeEntry = u8;
 static DEFAULT_ENTRY: TapeEntry = 0;
-static mut STATES: Vec<String> = vec![];
+static STATES_LOCK: RwLock<Vec<String>> = RwLock::new(vec![]);
 
-fn position<T: std::cmp::PartialEq>(vector: &mut Vec<T>, element: &T) -> Option<usize> {
+fn position<T: std::cmp::PartialEq>(vector: &Vec<T>, element: &T) -> Option<usize> {
     (0..vector.len()).find(|&i| &vector[i] == element)
 }
 
@@ -34,12 +34,13 @@ struct Instruction {
 
 impl Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let states = STATES_LOCK.read().unwrap();
         f.pad(&format!(
             "({}, {}) -> ({}, {}, {})",
-            unsafe { &STATES[self.state] },
+            states[self.state],
             self.entry,
             match self.new_state {
-                Some(state) => unsafe { &STATES[state] },
+                Some(state) => &states[state],
                 None => "Halt",
             },
             self.new_entry,
@@ -57,6 +58,7 @@ impl TryFrom<&str> for Instruction {
     type Error = InstructionParseError;
 
     fn try_from(line: &str) -> Result<Self, Self::Error> {
+        let mut states = STATES_LOCK.write().unwrap();
         if line.is_empty() {
             return Err(InstructionParseError::EmptyLine);
         }
@@ -73,24 +75,24 @@ impl TryFrom<&str> for Instruction {
         }
 
         let source_state = line[0].to_string();
-        let source_state = match position(unsafe { &mut STATES }, &source_state) {
+        let source_state = match position(&states, &source_state) {
             Some(source_state) => source_state,
-            None => unsafe {
-                STATES.push(source_state);
-                STATES.len() - 1
-            },
+            None => {
+                states.push(source_state);
+                states.len() - 1
+            }
         };
 
         let target_state = line[3].to_string();
         let target_state = if target_state == "Halt" {
             None
         } else {
-            match position(unsafe { &mut STATES }, &target_state) {
+            match position(&states, &target_state) {
                 Some(target_state) => Some(target_state),
-                None => unsafe {
-                    STATES.push(target_state);
-                    Some(STATES.len() - 1)
-                },
+                None => {
+                    states.push(target_state);
+                    Some(states.len() - 1)
+                }
             }
         };
 
@@ -204,9 +206,15 @@ impl TuringMachine {
                         return true;
                     }
                 }
-                unsafe {
-                    dbg!(&STATES);
-                }
+                let states = STATES_LOCK.read();
+                match states {
+                    Ok(states) => {
+                        dbg!(&states);
+                    }
+                    Err(why) => {
+                        println!("Can't get read-lock for states: {}", why);
+                    }
+                };
                 dbg!(self);
                 panic!("No Instruction matched Touringmachine");
             }
@@ -224,6 +232,7 @@ impl TuringMachine {
     }
 
     pub fn print_tape(&self, include_pos_marker: bool) {
+        let states = STATES_LOCK.read().unwrap();
         let mut tape = "".to_string();
         for entry in &self.tape {
             tape += &format!(" {entry}");
@@ -242,7 +251,7 @@ impl TuringMachine {
         }
 
         let state = match self.state {
-            Some(state) => unsafe { &STATES[state] },
+            Some(state) => &states[state],
             None => "Halt",
         };
 
@@ -282,11 +291,12 @@ impl TuringMachine {
     }
 
     pub fn print_states(&self) {
+        let states = STATES_LOCK.read().unwrap();
         println!("States: ");
         println!(" Number | Name ");
         println!("--------+------");
-        for i in 0..unsafe { STATES.len() } {
-            println!(" {:6} | '{}' ", i, unsafe { &STATES[i] })
+        for i in 0..states.len() {
+            println!(" {:6} | '{}' ", i, { &states[i] })
         }
         println!();
     }
@@ -314,7 +324,7 @@ impl TuringMachine {
 #[test]
 fn test_busy_bever_1() {
     let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_1.turing"));
-    
+
     tm.print_states();
     tm.print_instructions();
 
@@ -333,7 +343,7 @@ fn test_busy_bever_1() {
 #[test]
 fn test_busy_bever_2() {
     let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_2.turing"));
-    
+
     tm.print_states();
     tm.print_instructions();
 
@@ -352,7 +362,7 @@ fn test_busy_bever_2() {
 #[test]
 fn test_busy_bever_3() {
     let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_3.turing"));
-    
+
     tm.print_states();
     tm.print_instructions();
 
@@ -371,7 +381,7 @@ fn test_busy_bever_3() {
 #[test]
 fn test_busy_bever_4() {
     let mut tm = TuringMachine::new(Path::new("examples/busy_bever/busy_bever_4.turing"));
-    
+
     tm.print_states();
     tm.print_instructions();
 
@@ -392,7 +402,7 @@ fn test_busy_bever_5() {
     let mut tm = TuringMachine::new(Path::new(
         "examples/busy_bever/busy_bever_5_best_currently_known.turing",
     ));
-    
+
     tm.print_states();
     tm.print_instructions();
 
