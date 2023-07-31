@@ -1,5 +1,5 @@
 use std::{
-    collections::VecDeque, fmt::Display, fs::File, io::Read, path::Path, rc::Rc, sync::RwLock, vec,
+    collections::VecDeque, fmt::Display, fs::File, io::Read, path::Path, sync::RwLock, vec,
 };
 
 type TapeEntry = u8;
@@ -137,7 +137,7 @@ impl TryFrom<&str> for Instruction {
 #[derive(Debug, PartialEq, Eq)]
 pub struct TuringMachine {
     state: Option<usize>,
-    instructions: Rc<[Instruction]>,
+    instructions: Box<[Instruction]>,
     tape: VecDeque<TapeEntry>,
     pos: usize,
     offset: usize,
