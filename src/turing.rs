@@ -1,4 +1,6 @@
-use std::{collections::VecDeque, fmt::Display, fs::File, io::Read, path::Path, sync::RwLock, vec};
+use std::{
+    collections::VecDeque, fmt::Display, fs::File, io::Read, path::Path, rc::Rc, sync::RwLock, vec,
+};
 
 type TapeEntry = u8;
 static DEFAULT_ENTRY: TapeEntry = 0;
@@ -135,7 +137,7 @@ impl TryFrom<&str> for Instruction {
 #[derive(Debug, PartialEq, Eq)]
 pub struct TuringMachine {
     state: Option<usize>,
-    instructions: Vec<Instruction>,
+    instructions: Rc<[Instruction]>,
     tape: VecDeque<TapeEntry>,
     pos: usize,
     offset: usize,
@@ -169,7 +171,7 @@ impl TuringMachine {
 
                 TuringMachine {
                     state: Some(0),
-                    instructions,
+                    instructions: instructions.into(),
                     tape: vec![DEFAULT_ENTRY].into(),
                     pos: 0,
                     offset: 0,
@@ -184,7 +186,7 @@ impl TuringMachine {
             None => false,
             Some(state) => {
                 self.num_steps += 1;
-                for instruction in &self.instructions {
+                for instruction in self.instructions.iter() {
                     if state == &instruction.state && self.tape[self.pos] == instruction.entry {
                         self.state = instruction.new_state;
                         self.tape[self.pos] = instruction.new_entry;
@@ -241,7 +243,7 @@ impl TuringMachine {
         let mut instruction = None;
         match &self.state {
             Some(state) => {
-                for inst in &self.instructions {
+                for inst in self.instructions.iter() {
                     if state == &inst.state && self.tape[self.pos] == inst.entry {
                         instruction = Some(inst);
                     }
@@ -284,7 +286,7 @@ impl TuringMachine {
 
     pub fn print_instructions(&self) {
         println!("Instructions: ");
-        for instruction in &self.instructions {
+        for instruction in self.instructions.iter() {
             println!("{instruction}");
         }
         println!();
