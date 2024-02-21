@@ -1,11 +1,19 @@
 mod turing;
-use std::{env::args, path::Path, time::Instant};
+use std::{path::PathBuf, time::Instant};
 
+use clap::{command, Parser};
 use turing::TuringMachine;
 
+#[derive(Debug, Parser)]
+#[command(version)]
+struct Args {
+    /// Filename of the Turing-Machine to load.
+    filename: PathBuf,
+}
+
 fn main() {
-    let args: Vec<_> = args().collect();
-    let mut tm = TuringMachine::new(Path::new(&args[1]));
+    let args = Args::parse();
+    let mut tm = TuringMachine::new(&args.filename);
 
     tm.print_states();
     tm.print_instructions();

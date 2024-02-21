@@ -212,7 +212,7 @@ impl TuringMachine {
                     }
                 };
                 dbg!(self);
-                panic!("No Instruction matched Touringmachine");
+                panic!("No Instruction matched Turing-Machine");
             }
         }
     }
