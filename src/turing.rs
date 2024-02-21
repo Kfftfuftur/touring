@@ -1,14 +1,8 @@
-use std::{
-    collections::VecDeque, fmt::Display, fs::File, io::Read, path::Path, sync::RwLock, vec,
-};
+use std::{collections::VecDeque, fmt::Display, fs::File, io::Read, path::Path, sync::RwLock, vec};
 
 type TapeEntry = u8;
 static DEFAULT_ENTRY: TapeEntry = 0;
 static STATES_LOCK: RwLock<Vec<String>> = RwLock::new(vec![]);
-
-fn position<T: std::cmp::PartialEq>(vector: &Vec<T>, element: &T) -> Option<usize> {
-    (0..vector.len()).find(|&i| &vector[i] == element)
-}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Direction {
@@ -77,7 +71,7 @@ impl TryFrom<&str> for Instruction {
         }
 
         let source_state = line[0].to_string();
-        let source_state = match position(&states, &source_state) {
+        let source_state = match states.iter().position(|state| state == &source_state) {
             Some(source_state) => source_state,
             None => {
                 states.push(source_state);
@@ -89,7 +83,7 @@ impl TryFrom<&str> for Instruction {
         let target_state = if target_state == "Halt" {
             None
         } else {
-            match position(&states, &target_state) {
+            match states.iter().position(|state| state == &target_state) {
                 Some(target_state) => Some(target_state),
                 None => {
                     states.push(target_state);
